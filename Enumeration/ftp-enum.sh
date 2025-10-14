@@ -13,7 +13,9 @@ Unauth_enum(){
     sudo nmap -sV -p21 -sC -A $IP > FTP_Unauth_enum.txt
 }
 
-# Function call 
+# Function call
+
+read -p 'Enter the IP Address : ' IP # user input 
 ftp_anonymous
 Unauth_enum
 
