@@ -35,3 +35,4 @@ netexec(){
 
 # Function Call 
 read -p 'Enter the IP Address : ' IP
+netexec
