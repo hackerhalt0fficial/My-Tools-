@@ -111,7 +111,6 @@ subfinder_dns() {
 
     echo "Running subfinder for domain: $domain..." | tee "$output_file"
 
-    # Real-time output to terminal & file
     subfinder -d "$domain" | tee -a "$output_file"
 
     echo "Subfinder completed. Results saved to: $output_file" | tee -a "$output_file"
@@ -137,13 +136,12 @@ gobuster_DNS() {
     {
         counter=0
         gobuster dns -d "$domain" -w /opt/SecLists/Discovery/DNS/subdomains-top1million-110000.txt 2>/dev/null | \
-        tee /dev/stderr |  # Print all gobuster output to terminal
+        tee /dev/stderr | 
         while IFS= read -r line; do
             if [[ "$line" == *"Found:"* ]]; then
-                # Extract only the subdomain after "Found:"
                 subdomain=$(echo "$line" | awk '{print $2}')
                 ((counter++))
-                echo "$subdomain" >> "$output"  # Save only subdomain to file
+                echo "$subdomain" >> "$output"
                 echo "[$counter] 🎯 $subdomain"
             fi
         done
@@ -152,6 +150,33 @@ gobuster_DNS() {
 
     echo "🎯 Process running in background (PID: $!)"
     echo "📊 Monitor: tail -f $output"
+}
+
+# ------------ FILTER DUPLICATE SUBDOMAINS ------------
+
+filter_duplicate_subdomains() {
+    if [[ $# -ne 2 ]]; then
+        echo "Usage: filter_duplicate_subdomains <file1> <file2>"
+        return 1
+    fi
+
+    local file1="$1"
+    local file2="$2"
+    local output_file="subdomain.txt"
+
+    if [[ ! -f "$file1" ]]; then
+        echo "Error: File not found - $file1"
+        return 2
+    fi
+
+    if [[ ! -f "$file2" ]]; then
+        echo "Error: File not found - $file2"
+        return 3
+    fi
+
+    cat "$file1" "$file2" | sort -u > "$output_file"
+
+    echo "Duplicates removed. Unique subdomains saved to: $output_file"
 }
 
 # ------------- MAIN SCRIPT EXECUTION -------------
@@ -166,8 +191,6 @@ fi
 echo ""
 echo "🚀 Starting scans for: $TARGET"
 echo "=========================================="
-
-# Uncomment calls below to run scans as desired
 
 echo ""
 echo "🔍 Starting Web Technology Scan..."
@@ -184,6 +207,13 @@ echo ""
 echo "🌐 Starting DNS Subdomain Enumeration..."
 gobuster_DNS "$TARGET"
 
+# Wait a bit to ensure gobuster background process producing output (optionally wait or sync differently)
+sleep 10
+
+# Run duplicate filter on gobuster and subfinder outputs
+filter_duplicate_subdomains "subdomains_${TARGET}.txt" "subfinder_${TARGET}_results.txt"
+
 echo ""
 echo "=========================================="
 echo "✅ All scans initiated for: $TARGET"
+echo "✅ Unique subdomains saved in subdomain.txt"
