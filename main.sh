@@ -30,7 +30,6 @@ run_enumeration() {
 }
 
 
-
 # Exploitation
 run_Exploitation() {
   echo "Select Enumeration Script:"

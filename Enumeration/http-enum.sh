@@ -137,23 +137,6 @@ gobuster_DNS(){
     echo "📊 Monitor: tail -f $output"
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Function Call
 read -p "🎯 Target IP/Domain: " IP
 
