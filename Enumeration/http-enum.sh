@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Base directory (repo root)
+BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+OUTPUT_DIR="$BASE_DIR/outputs"
+ENM_DIR="$OUTPUT_DIR/enumeration"
+SUBDOM_DIR="$OUTPUT_DIR/subdomain"
+
+# Ensure directories exist
+mkdir -p "$ENM_DIR" "$SUBDOM_DIR"
+
 # ------------ WEB TECHNOLOGY CHECK ------------
 
 what_web() {
@@ -10,13 +19,14 @@ what_web() {
 
     local target="$1"
     local temp_file=$(mktemp)
-    local output_file="whatweb_${target}.txt"
+    local output_file="$ENM_DIR/whatweb_${target}.txt"
 
     echo -e "Checking Web Technology for: $target" | tee "$output_file"
     echo "" | tee -a "$output_file"
 
     # Run whatweb streaming output to temp and file real-time
-    whatweb "$target" --color=never | tee "$temp_file"
+    # Save the full whatweb output to both the temp file (for parsing) and the final output file
+    whatweb "$target" --color=never | tee "$temp_file" "$output_file"
 
     # Color codes for formatted output
     GREEN='\033[0;32m'
@@ -107,13 +117,14 @@ subfinder_dns() {
     fi
 
     local domain="$1"
-    local output_file="subfinder_${domain}_results.txt"
+    local output_file="$SUBDOM_DIR/subfinder_${domain}_results.txt"
 
     echo " $domain..." | tee "$output_file"
 
     subfinder -d "$domain" | tee -a "$output_file"
 
-    echo "$output_file" | tee -a "$output_file"
+    # Print where results were saved
+    echo "Results saved to: $output_file"
 }
 
 # ------------ BRUTEFORCE SUBDOMAIN ENUMERATION WITH GOBUSTER ------------
@@ -125,7 +136,7 @@ gobuster_DNS() {
     fi
 
     local domain="$1"
-    local output="subdomains_${domain}.txt"
+    local output="$SUBDOM_DIR/subdomains_${domain}.txt"
 
     > "$output"
 
@@ -133,22 +144,40 @@ gobuster_DNS() {
     echo "💾 Saving subdomains to: $output"
     echo ""
 
+    # Verify wordlist exists
+    local wordlist="/opt/SecLists/Discovery/DNS/subdomains-top1million-110000.txt"
+    if [[ ! -f "$wordlist" ]]; then
+        echo "Error: Gobuster wordlist not found: $wordlist"
+        echo "Please provide a valid wordlist or install SecLists."
+        return 2
+    fi
+
     {
         counter=0
-        gobuster dns -d "$domain" -w /opt/SecLists/Discovery/DNS/subdomains-top1million-110000.txt 2>/dev/null | \
-        tee /dev/stderr | 
+        # Escape dots in domain for regex matching
+        domain_esc=${domain//./\.}
+
+        # Stream gobuster output (both stdout/stderr) and extract subdomains matching the domain
+        gobuster dns -d "$domain" -w "$wordlist" 2>&1 | \
         while IFS= read -r line; do
-            if [[ "$line" == *"Found:"* ]]; then
-                subdomain=$(echo "$line" | awk '{print $2}')
-                ((counter++))
-                echo "$subdomain" >> "$output"
-                echo "[$counter] 🎯 $subdomain"
-            fi
+            # Extract potential subdomains (alphanum, dot, underscore, hyphen) ending with the domain
+            echo "$line" | grep -Eo "[A-Za-z0-9._%+-]+\.$domain_esc" | while IFS= read -r sub; do
+                sub=$(echo "$sub" | tr -d '\r')
+                if [[ -n "$sub" ]]; then
+                    # Avoid duplicates
+                    if ! grep -Fxq "$sub" "$output" 2>/dev/null; then
+                        ((counter++))
+                        echo "$sub" >> "$output"
+                        echo "[$counter] 🎯 $sub"
+                    fi
+                fi
+            done
         done
         echo "✅ Scan completed! Total: $counter subdomains"
     } &
 
-    echo "🎯 Process running in background (PID: $!)"
+    bg_pid=$!
+    echo "🎯 Process running in background (PID: $bg_pid)"
     echo "📊 Monitor: tail -f $output"
 }
 
@@ -211,9 +240,20 @@ gobuster_DNS "$TARGET"
 sleep 10
 
 # Run duplicate filter on gobuster and subfinder outputs
-filter_duplicate_subdomains "subdomains_${TARGET}.txt" "subfinder_${TARGET}_results.txt"
+filter_duplicate_subdomains "/home/halt/My-Tools-/subdomain/subdomains_${TARGET}.txt" "/home/halt/My-Tools-/subdomain/subfinder_${TARGET}_results.txt"
 
 echo ""
 echo "=========================================="
 echo "✅ All scans initiated for: $TARGET"
 echo "✅ Unique subdomains saved in subdomain.txt"
+
+# /curl/Subdomain-Filter.sh
+echo ""
+echo "Starting Subdomain Filtering..."
+bash /home/halt/My-Tools-/curl/Subdomain-Filter.sh
+
+# /curl/dorking.sh
+echo ""
+echo "Starting Dorking with Curl..."
+bash /home/halt/My-Tools-/curl/dorking.sh
+

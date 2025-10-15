@@ -15,16 +15,25 @@ fetch_vulnweb_archives() {
   curl -s "$base_url" | while read -r url; do
     echo "$url" >> "$output_file"
   done
-
-  echo "URLs saved to $output_file"
 }
 
 # main Function Call
 
-input_file="/home/halt/My-Tools-/subdomain.txt"
+BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SUBDOM_DIR="$BASE_DIR/outputs/subdomain"
+DORK_DIR="$BASE_DIR/outputs/dorking"
+mkdir -p "$SUBDOM_DIR" "$DORK_DIR"
+
+input_file="$SUBDOM_DIR/subdomain.txt"
 if [[ ! -f "$input_file" ]]; then
   echo "File $input_file not found!"
   exit 1
+fi
+
+# Ensure curl is available
+if ! command -v curl >/dev/null 2>&1; then
+  echo "Error: curl is required but not found in PATH."
+  exit 2
 fi
 
 while IFS= read -r domain || [[ -n "$domain" ]]; do
@@ -34,10 +43,18 @@ while IFS= read -r domain || [[ -n "$domain" ]]; do
     continue
   fi
 
-  output_file="${domain}_archived_urls.txt"
-  # Clear previous output file if exists
-  > "$output_file"
-
+  output_file="$DORK_DIR/${domain}_archived_urls.txt"
   echo "Fetching archived URLs for domain: $domain"
-  fetch_vulnweb_archives "$domain" "$FROM_DATE" "$output_file"
+
+  # Use a temp file and only save final file if there's content
+  tmp_output=$(mktemp) || { echo "Failed to create temp file"; exit 1; }
+  fetch_vulnweb_archives "$domain" "$FROM_DATE" "$tmp_output"
+
+  if [[ -s "$tmp_output" ]]; then
+    mv "$tmp_output" "$output_file"
+    echo "URLs saved to $output_file"
+  else
+    rm -f "$tmp_output"
+    echo "No archived URLs found for $domain; skipping file creation."
+  fi
 done < "$input_file"
