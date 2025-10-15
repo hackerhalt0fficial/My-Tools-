@@ -16,14 +16,20 @@ run_enumeration() {
   echo "1) SMB Enum"
   echo "2) HTTP Enum"
   echo "3) FTP Enum"
+  echo "4) SNMP Enum"
+  echo "5) SSH Enum"
   read -p "Choice: " enum_choice
   case $enum_choice in
     1) bash ./Enumeration/smb-enum.sh ;;
     2) bash ./Enumeration/http-enum.sh ;;
     3) bash ./Enumeration/ftp-enum.sh ;;
+    4) bash ./Enumeration/SNMP-enum.sh ;;
+    3) bash ./Enumeration/SSH-enum.sh ;;
     *) echo "Invalid choice." ;;
   esac
 }
+
+
 
 # Exploitation
 run_Exploitation() {
