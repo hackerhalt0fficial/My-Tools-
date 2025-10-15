@@ -1,0 +1,23 @@
+Checking Web Technology for: dsgroup.com
+
+[1m🔍 WEB TECHNOLOGY SCAN - KEY FINDINGS[0m
+==========================================
+Target: [1mdsgroup.com[0m
+Date: Wednesday 15 October 2025 03:22:11 PM IST
+==========================================
+
+[1m🚀 CRITICAL TECHNOLOGIES:[0m
+──────────────────────────
+[0;32m🖥️  Web Server: Apache[0m
+[0;34m🌍 IP Address: 43.231.249.49[0m
+[0;36m📝 Page Title: 301 Moved Permanently[0m
+[0;32m🔒 X-Frame-Options: SAMEORIGIN[0m
+[0;32m🔒 X-XSS-Protection: 1; mode=block[0m
+[1;33m🍪 Cookies: ci_session[0m
+[0;32m📄 HTML5: Yes[0m
+[0;32m⚡ JavaScript: Yes[0m
+[0;32m🐘 PHP: Detected[0m
+
+==========================================
+[1m✅ Scan Complete[0m
+Full results saved to whatweb_dsgroup.com.txt

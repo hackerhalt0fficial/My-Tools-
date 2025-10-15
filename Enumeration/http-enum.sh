@@ -109,11 +109,11 @@ subfinder_dns() {
     local domain="$1"
     local output_file="subfinder_${domain}_results.txt"
 
-    echo "Running subfinder for domain: $domain..." | tee "$output_file"
+    echo " $domain..." | tee "$output_file"
 
     subfinder -d "$domain" | tee -a "$output_file"
 
-    echo "Subfinder completed. Results saved to: $output_file" | tee -a "$output_file"
+    echo "$output_file" | tee -a "$output_file"
 }
 
 # ------------ BRUTEFORCE SUBDOMAIN ENUMERATION WITH GOBUSTER ------------
